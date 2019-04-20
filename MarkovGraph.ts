@@ -25,8 +25,9 @@ class Graph {
     constructor(text: string) {
         this.inputText = text;
         this.dict = new Dictionary();
+        this.init();
     }
-    _train(inputString): number {
+    private _train(inputString): number {
         let lastNode;
         inputString.split(' ')
             .forEach((currentWord, i, words) => {
@@ -56,19 +57,28 @@ class Graph {
     }
 
     predict(additionalInput?) {
-        if (additionalInput !== undefined)
-            return this._train(additionalInput);
+        let lastNodeIdx = additionalInput !== undefined ? this._train(additionalInput) : 0;
+        let lastNode = this.dict.items.find(x => x.id == lastNodeIdx);
+        let predictionData = lastNode.afterMe;
+        let uniqueSorted = Array.from(new Set(predictionData))
+            .sort((a, b) => predictionData.filter(x => x === a).length - predictionData.filter(x => x === b).length);
+        let text = uniqueSorted.map(x => this.dict.items.find(h => h.id == x));
+        return text.map(x => x.text);
     }
 }
 
-let greenEggsAndHam = JSON.parse(fs.readFileSync('./data/text.json', { encoding: 'UTF-8' }))['greenEggsAndHam'];
-let testGraph = new Graph(greenEggsAndHam);
-testGraph.init();
+let testData = JSON.parse(fs.readFileSync('./data/text.json', { encoding: 'UTF-8' }))['greenEggsAndHam'];
+let testGraph = new Graph(testData);
 
+const m = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-let currentNode = testGraph.predict("I will");
-let q = testGraph.dict.items.find(x => x.id == currentNode);
-let uniqueSorted = Array.from(new Set(q.afterMe))
-    .sort((a,b) => q.afterMe.filter(x => x === a).length - q.afterMe.filter(x => x === b).length);
-
-console.log(uniqueSorted.map(x => testGraph.dict.items.filter(a => a.id == x)));
+function go() {
+    m.question("You: ", newInput => {
+        m.close();
+        console.log(testGraph.predict(newInput));
+    });
+};
+go();

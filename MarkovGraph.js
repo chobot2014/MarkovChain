@@ -21,6 +21,7 @@ var Graph = /** @class */ (function () {
     function Graph(text) {
         this.inputText = text;
         this.dict = new Dictionary();
+        this.init();
     }
     Graph.prototype._train = function (inputString) {
         var _this = this;
@@ -51,26 +52,29 @@ var Graph = /** @class */ (function () {
         this._train(this.inputText);
     };
     Graph.prototype.predict = function (additionalInput) {
-        if (additionalInput !== undefined)
-            return this._train(additionalInput);
+        var _this = this;
+        var lastNodeIdx = additionalInput !== undefined ? this._train(additionalInput) : 0;
+        var lastNode = this.dict.items.find(function (x) { return x.id == lastNodeIdx; });
+        var predictionData = lastNode.afterMe;
+        var uniqueSorted = Array.from(new Set(predictionData))
+            .sort(function (a, b) { return predictionData.filter(function (x) { return x === a; }).length - predictionData.filter(function (x) { return x === b; }).length; });
+        var text = uniqueSorted.map(function (x) { return _this.dict.items.find(function (h) { return h.id == x; }); });
+        return text.map(function (x) { return x.text; });
     };
     return Graph;
 }());
-var greenEggsAndHam = JSON.parse(fs.readFileSync('./data/text.json', { encoding: 'UTF-8' }))['greenEggsAndHam'];
-var testGraph = new Graph(greenEggsAndHam);
-testGraph.init();
-var currentNode = testGraph.predict("I will");
-var q = testGraph.dict.items.find(function (x) { return x.id == currentNode; });
-var uniqueSorted = Array.from(new Set(q.afterMe))
-    .sort(function (a, b) { return q.afterMe.filter(function (x) { return x === a; }).length - q.afterMe.filter(function (x) { return x === b; }).length; });
-console.log(uniqueSorted.map(function (x) { return testGraph.dict.items.filter(function (a) { return a.id == x; }); }));
-// let usedDict = testGraph.dict.items.filter(x => x.afterMe.length > 0);
-// console.log(usedDict);
-// let usedDict = testGraph.dict.items.filter(x => x.afterMe.length > 0);
-// let searcher = (item) => {
-//     if (item.afterMe.length > 0) {
-//         let tempDict = item.afterMe.map(x => usedDict.find(m => m.id == x));
-//         searcher(tempDict.sort((a, b) => b.afterMe.length - a.afterMe.length)[0])
-//     }
-// };
-// searcher(usedDict.sort((a, b) => b.afterMe.length - a.afterMe.length)[0]);
+var testData = JSON.parse(fs.readFileSync('./data/text.json', { encoding: 'UTF-8' }))['greenEggsAndHam'];
+testData += fs.readFileSync('./data/abandoned.txt', { encoding: 'UTF-8' });
+var testGraph = new Graph(testData);
+var m = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+function go() {
+    m.question("You: ", function (newInput) {
+        m.close();
+        console.log(testGraph.predict(newInput));
+    });
+}
+;
+go();
